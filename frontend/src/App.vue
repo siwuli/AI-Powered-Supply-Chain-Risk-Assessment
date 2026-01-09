@@ -3,7 +3,7 @@
     <div class="header">
       <div class="logo-area">
         <el-icon class="logo-icon" :size="28"><DataAnalysis /></el-icon>
-        <span class="title">AI 供应链风控大脑 <span class="version">PRO</span></span>
+        <span class="title">AI + 供应链金融 大数据风控评分卡</span>
       </div>
 
       <div class="status-bar">
@@ -196,6 +196,41 @@
         <div class="empty-tips">支持：沪深A股 / 港股 / 美股</div>
       </div>
     </div>
+
+    <div class="footer">
+      <div class="footer-content">
+        <div class="footer-col">
+          <div class="col-title">产品功能</div>
+          <a class="footer-link">风控评估</a>
+          <a class="footer-link">实时监控</a>
+          <a class="footer-link">决策设置</a>
+          <a class="footer-link">数据管理</a>
+        </div>
+        <div class="footer-col">
+          <div class="col-title">快速链接</div>
+          <a class="footer-link">关于我们</a>
+          <a class="footer-link">隐私政策</a>
+          <a class="footer-link">服务条款</a>
+          <a class="footer-link">联系我们</a>
+        </div>
+        <div class="footer-col contact-col">
+          <div class="col-title">联系方式</div>
+          <div class="contact-item">
+            <el-icon><Location /></el-icon> 苏州工业园区职业技术学院
+          </div>
+          <div class="contact-item">
+            <el-icon><Phone /></el-icon> 13626192149
+          </div>
+          <div class="contact-item">
+            <el-icon><Message /></el-icon> 1954129550@qq.com
+          </div>
+        </div>
+      </div>
+      <div class="copyright">
+        © 2026 智链风控. 保留所有权利 | 京ICP备xxxxxxxx号
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -309,8 +344,11 @@ const tableRowClassName = ({ rowIndex }) => rowIndex % 2 === 1 ? 'row-dark' : ''
   min-height: 100vh;
   background-color: #0b1120;
   color: #fff;
-  padding: 20px 40px;
+  /* 修改：移除底部 padding，为页脚腾出空间，确保页脚贴底 */
+  padding: 20px 40px 0 40px;
   font-family: 'PingFang SC', sans-serif;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 顶部 */
@@ -324,7 +362,7 @@ const tableRowClassName = ({ rowIndex }) => rowIndex % 2 === 1 ? 'row-dark' : ''
 }
 .logo-area { display: flex; align-items: center; gap: 10px; color: #38bdf8; }
 .title { font-size: 24px; font-weight: bold; }
-.version { font-size: 12px; background: #38bdf8; color: #000; padding: 2px 6px; border-radius: 4px; vertical-align: super;}
+/* 移除了 .version 样式 */
 .status-bar { display: flex; gap: 15px; align-items: center; }
 .source-tag { cursor: pointer; transition: 0.3s; }
 .source-tag:hover { transform: scale(1.05); }
@@ -408,13 +446,63 @@ const tableRowClassName = ({ rowIndex }) => rowIndex % 2 === 1 ? 'row-dark' : ''
 .txt { font-size: 12px; color: #94a3b8; }
 
 /* 表格 */
-.table-panel { margin-top: 20px; }
+.table-panel { margin-top: 20px; margin-bottom: 40px; } /* 增加底部边距 */
 :deep(.el-table) { background: transparent; --el-table-tr-bg-color: transparent; --el-table-header-bg-color: #1e293b; color: #fff; --el-table-border-color: #2a3b55; }
 :deep(.row-dark) { background: #111827; }
 
 /* 空状态 */
-.empty-holder { display: flex; justify-content: center; margin-top: 100px; color: #475569; }
+.empty-holder { display: flex; justify-content: center; align-items: center; flex: 1; color: #475569; }
 .empty-box { text-align: center; }
 .empty-icon { font-size: 80px; margin-bottom: 20px; opacity: 0.5; }
 .empty-tips { font-size: 12px; margin-top: 10px; color: #334155; }
+
+/* 修改点3：新增页脚样式 */
+.footer {
+  margin-top: auto; /* 将页脚推到最底部 */
+  background-color: #0f172a; /* 与背景一致或稍微深一点 */
+  padding: 40px 40px 20px;
+  border-top: 1px solid #1e293b;
+  font-size: 14px;
+  color: #94a3b8;
+}
+.footer-content {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 30px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+.col-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 10px;
+}
+.footer-link {
+  color: #94a3b8;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+.footer-link:hover {
+  color: #38bdf8;
+}
+.contact-col .contact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.copyright {
+  text-align: center;
+  padding-top: 20px;
+  border-top: 1px solid #1e293b;
+  font-size: 12px;
+  color: #475569;
+}
 </style>

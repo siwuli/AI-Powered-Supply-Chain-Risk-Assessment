@@ -2,28 +2,28 @@
   <div class="app-container">
     <div class="header">
       <div class="logo-area">
-        <span class="logo-icon">🔗</span>
-        <span class="title">AI 供应链风控大脑</span>
+        <el-icon class="logo-icon" :size="28"><DataAnalysis /></el-icon>
+        <span class="title">AI 供应链风控大脑 <span class="version">PRO</span></span>
       </div>
-      <div class="status-tags">
-        <el-tag type="success" effect="dark" round>系统运行中</el-tag>
-        <el-tag type="info" effect="plain" round>数据源：AkShare + DeepSeek</el-tag>
+      <div class="status-bar">
+        <span class="time">{{ currentTime }}</span>
+        <el-tag type="success" effect="dark" round>系统在线</el-tag>
       </div>
     </div>
 
     <div class="search-section">
-      <div class="search-wrapper">
+      <div class="search-box">
         <el-input
           v-model="searchQuery"
-          placeholder="请输入企业名称（推荐：宁德时代、比亚迪、上汽集团、顺丰控股）"
-          class="custom-search"
+          placeholder="请输入企业名称（如：腾讯控股、比亚迪、特斯拉）"
+          class="custom-input"
           size="large"
           @keyup.enter="handleSearch"
         >
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
         <el-button type="primary" size="large" @click="handleSearch" :loading="loading" class="search-btn">
-          立即评估
+          全维评估
         </el-button>
       </div>
     </div>
@@ -31,328 +31,385 @@
     <div v-if="result" class="dashboard animate__animated animate__fadeIn">
 
       <el-row :gutter="20">
-        <el-col :span="8">
-          <el-card class="box-card score-card">
-            <template #header>
-              <div class="card-header">
-                <span><el-icon><Odometer /></el-icon> 供应链信用评分</span>
-              </div>
-            </template>
-            <div class="score-body">
-              <div class="score-circle" :class="getScoreClass(result.risk_data.score)">
-                <span class="score-num">{{ result.risk_data.score }}</span>
-                <span class="score-level">{{ result.risk_data.level }}级</span>
-              </div>
-              <div class="market-info">
-                <div class="info-item">
-                  <div class="label">股价波动率</div>
-                  <div class="val danger">{{ result.stock_info.volatility }}</div>
-                </div>
-                <div class="info-item">
-                  <div class="label">市场趋势</div>
-                  <div class="val" :class="isPositive(result.stock_info.trend) ? 'success' : 'danger'">
-                    {{ result.stock_info.trend }}
-                  </div>
-                </div>
-              </div>
-              <div class="company-tags">
-                <el-tag>{{ result.industry }}</el-tag>
-                <el-tag type="info">{{ result.legal }}</el-tag>
+        <el-col :span="6">
+          <div class="panel score-panel">
+            <div class="panel-title">综合信用评分</div>
+            <div class="score-chart">
+              <div class="score-ring" :class="getScoreClass(result.risk_data.score)">
+                <span class="score-val">{{ result.risk_data.score }}</span>
+                <span class="score-label">{{ result.risk_data.level }}级</span>
               </div>
             </div>
-          </el-card>
+            <div class="company-badges">
+              <el-tag effect="plain" type="info">{{ result.legal }}</el-tag>
+              <el-tag effect="plain" type="primary">{{ result.capital }}</el-tag>
+            </div>
+          </div>
+        </el-col>
+
+        <el-col :span="10">
+          <div class="panel market-panel">
+            <div class="panel-title">实时行情监测 (Real-time)</div>
+            <div class="market-grid">
+              <div class="market-item">
+                <div class="m-label">当前股价</div>
+                <div class="m-val highlight">{{ result.stock_info.price }}</div>
+              </div>
+              <div class="market-item">
+                <div class="m-label">市盈率(PE)</div>
+                <div class="m-val">{{ result.stock_info.pe }}</div>
+              </div>
+              <div class="market-item">
+                <div class="m-label">波动率 (风险)</div>
+                <div class="m-val danger">{{ result.stock_info.volatility }}</div>
+              </div>
+              <div class="market-item">
+                <div class="m-label">市场趋势</div>
+                <div class="m-val" :class="isPositive(result.stock_info.trend) ? 'up' : 'down'">
+                  {{ result.stock_info.trend }}
+                </div>
+              </div>
+            </div>
+            <div class="market-desc">
+              <el-alert :title="'基于 ' + result.stock_info.volatility + ' 的波动率分析，该企业供应链外部风险敞口' + (parseFloat(result.stock_info.volatility) > 5 ? '较大' : '可控') + '。'" type="info" :closable="false" show-icon />
+            </div>
+          </div>
+        </el-col>
+
+        <el-col :span="8">
+          <div class="panel ai-panel">
+            <div class="panel-title">
+              <span>DeepSeek 深度研报</span>
+              <el-icon class="ai-icon"><Cpu /></el-icon>
+            </div>
+            <div class="ai-content-box">
+              <p class="ai-text">{{ result.ai_analysis }}</p>
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+
+      <el-row :gutter="20" class="chart-row">
+        <el-col :span="8">
+          <div class="panel chart-panel">
+            <div class="panel-title">供应链韧性雷达</div>
+            <div id="radarChart" class="chart-container"></div>
+          </div>
         </el-col>
 
         <el-col :span="16">
-          <el-card class="box-card ai-card">
-            <template #header>
-              <div class="card-header ai-header">
-                <span class="ai-title"><el-icon><Cpu /></el-icon> DeepSeek 深度风控报告</span>
-                <el-tag effect="dark" color="#626aef" style="border:none">AI Generated</el-tag>
-              </div>
-            </template>
-            <div class="ai-content">
-              <p class="ai-text">{{ result.ai_analysis }}</p>
-            </div>
-          </el-card>
+          <div class="panel chart-panel">
+            <div class="panel-title">全球节点流量与成本分析</div>
+            <div id="barChart" class="chart-container"></div>
+          </div>
         </el-col>
       </el-row>
 
       <div class="metrics-row">
-        <el-row :gutter="15">
-          <el-col :span="6">
-            <div class="metric-box blue-box">
-              <div class="metric-num">{{ result.risk_data.stats.supplier_nodes }}</div>
-              <div class="metric-label">供应商节点</div>
-              <el-progress :percentage="80" :show-text="false" stroke-width="4" color="rgba(255,255,255,0.5)"/>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="metric-box green-box">
-              <div class="metric-num">{{ result.risk_data.stats.logistics_routes }}</div>
-              <div class="metric-label">活跃物流路线</div>
-              <el-progress :percentage="65" :show-text="false" stroke-width="4" color="rgba(255,255,255,0.5)"/>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="metric-box orange-box">
-              <div class="metric-num">{{ result.risk_data.stats.warehouses }}</div>
-              <div class="metric-label">仓储中心</div>
-              <el-progress :percentage="40" :show-text="false" stroke-width="4" color="rgba(255,255,255,0.5)"/>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="metric-box purple-box">
-              <div class="metric-num">{{ result.risk_data.stats.transport_efficiency }}</div>
-              <div class="metric-label">全链运输效率</div>
-              <el-progress :percentage="parseInt(result.risk_data.stats.transport_efficiency)" :show-text="false" stroke-width="4" color="rgba(255,255,255,0.5)"/>
-            </div>
-          </el-col>
-        </el-row>
+        <div class="metric-card">
+          <div class="icon-bg blue"><el-icon><Goods /></el-icon></div>
+          <div class="metric-info">
+            <div class="num">{{ result.risk_data.stats.supplier_nodes }}</div>
+            <div class="txt">核心供应商</div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="icon-bg green"><el-icon><Van /></el-icon></div>
+          <div class="metric-info">
+            <div class="num">{{ result.risk_data.stats.logistics_routes }}</div>
+            <div class="txt">物流专线</div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="icon-bg orange"><el-icon><House /></el-icon></div>
+          <div class="metric-info">
+            <div class="num">{{ result.risk_data.stats.warehouses }}</div>
+            <div class="txt">仓储中心</div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="icon-bg purple"><el-icon><Timer /></el-icon></div>
+          <div class="metric-info">
+            <div class="num">{{ result.risk_data.stats.transport_efficiency }}</div>
+            <div class="txt">周转效率</div>
+          </div>
+        </div>
       </div>
 
-      <el-row :gutter="20" style="margin-top: 20px;">
-        <el-col :span="24">
-          <el-card class="box-card">
-            <template #header>
-              <div class="card-header">
-                <span><el-icon><Share /></el-icon> 关键供应链节点监控</span>
-              </div>
+      <div class="panel table-panel">
+        <div class="panel-title">节点监控详情</div>
+        <el-table :data="result.risk_data.nodes_list" style="width: 100%" :row-class-name="tableRowClassName">
+          <el-table-column prop="name" label="节点名称" />
+          <el-table-column prop="status" label="运行状态">
+            <template #default="scope">
+              <el-tag size="small" :type="scope.row.status === '正常' ? 'success' : 'danger'" effect="dark">{{ scope.row.status }}</el-tag>
             </template>
-            <el-table :data="result.risk_data.nodes_list" style="width: 100%" :row-class-name="tableRowClassName">
-              <el-table-column prop="name" label="节点名称" width="180">
-                <template #default="scope">
-                  <div style="font-weight:bold">{{ scope.row.name }}</div>
-                </template>
-              </el-table-column>
-              <el-table-column prop="status" label="状态" width="100">
-                <template #default="scope">
-                  <el-tag :type="scope.row.status === '正常' ? 'success' : 'danger'" effect="dark">
-                    {{ scope.row.status }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column prop="flow" label="实时流量" />
-              <el-table-column prop="efficiency" label="节点效率" />
-              <el-table-column prop="cost" label="物流成本" />
-              <el-table-column prop="risk" label="风险系数">
-                <template #default="scope">
-                  <span :style="{color: parseInt(scope.row.risk) > 20 ? '#f56c6c' : '#67c23a'}">
-                    {{ scope.row.risk }}
-                  </span>
-                </template>
-              </el-table-column>
-            </el-table>
-          </el-card>
-        </el-col>
-      </el-row>
+          </el-table-column>
+          <el-table-column prop="flow" label="吞吐流量 (吨)" />
+          <el-table-column prop="cost" label="运营成本 (万美元)" />
+          <el-table-column prop="efficiency" label="效率">
+             <template #default="scope">
+               <el-progress :percentage="parseInt(scope.row.efficiency)" :color="customColors" />
+             </template>
+          </el-table-column>
+        </el-table>
+      </div>
 
     </div>
 
-    <div v-else class="empty-state">
-      <el-empty description="请输入 A股 上市企业名称，启动 AI 风控引擎" image-size="200"></el-empty>
+    <div v-else class="empty-holder">
+      <div class="empty-box">
+        <el-icon class="empty-icon"><DataLine /></el-icon>
+        <p>请输入上市企业名称，启动全维风控模型</p>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, nextTick, onUnmounted } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import * as echarts from 'echarts'
 
 const searchQuery = ref('')
 const loading = ref(false)
 const result = ref(null)
+const currentTime = ref('')
 
+// 更新时间
+setInterval(() => {
+  const now = new Date()
+  currentTime.value = now.toLocaleTimeString()
+}, 1000)
+
+const customColors = [
+  { color: '#f56c6c', percentage: 60 },
+  { color: '#e6a23c', percentage: 80 },
+  { color: '#5cb87a', percentage: 100 },
+]
+
+// 核心搜索逻辑
 const handleSearch = async () => {
   if (!searchQuery.value) return
-
   loading.value = true
-  result.value = null // 重置数据
+  result.value = null // 清空旧数据
 
   try {
-    // 调用后端接口
     const response = await axios.post('http://127.0.0.1:8080/assess', {
       company_name: searchQuery.value
     })
 
     if (response.data.status === 'success') {
       result.value = response.data
-      ElMessage.success('评估完成')
+      ElMessage.success('分析完成')
+
+      // 等待 DOM 更新后渲染图表
+      await nextTick()
+      initCharts()
     } else {
-      ElMessage.warning(response.data.message || '未查询到相关数据')
+      ElMessage.warning(response.data.message || '未查询到数据')
     }
   } catch (error) {
-    console.error(error)
-    ElMessage.error('连接后端失败，请确保 backend/main.py 已运行')
+    ElMessage.error('连接服务器失败')
   } finally {
     loading.value = false
   }
 }
 
-// 辅助函数：判断涨跌
-const isPositive = (str) => {
-  return str && !str.includes('-')
+// 初始化 ECharts 图表
+const initCharts = () => {
+  if (!result.value) return
+
+  // 1. 雷达图
+  const radarChart = echarts.init(document.getElementById('radarChart'))
+  const dims = result.value.risk_data.dimensions
+  const radarOption = {
+    backgroundColor: 'transparent',
+    tooltip: {},
+    radar: {
+      indicator: [
+        { name: '供应稳定性', max: 100 },
+        { name: '链条多样性', max: 100 },
+        { name: '物流可靠性', max: 100 },
+        { name: '仓储效率', max: 100 }
+      ],
+      splitArea: {
+        areaStyle: {
+          color: ['rgba(64,158,255,0.1)', 'rgba(64,158,255,0.2)']
+        }
+      },
+      axisName: { color: '#fff' }
+    },
+    series: [{
+      type: 'radar',
+      data: [{
+        value: [
+          dims.supplier_stability.score,
+          dims.chain_diversity.score,
+          dims.logistics_reliability.score,
+          dims.warehouse_efficiency.score
+        ],
+        name: '供应链能力',
+        areaStyle: { color: 'rgba(64, 158, 255, 0.5)' },
+        lineStyle: { color: '#409eff' }
+      }]
+    }]
+  }
+  radarChart.setOption(radarOption)
+
+  // 2. 柱状图 (流量 vs 成本)
+  const barChart = echarts.init(document.getElementById('barChart'))
+  const nodes = result.value.risk_data.nodes_list
+  const barOption = {
+    backgroundColor: 'transparent',
+    tooltip: { trigger: 'axis' },
+    legend: { textStyle: { color: '#fff' }, bottom: 0 },
+    grid: { top: '15%', bottom: '20%', left: '5%', right: '5%', containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: nodes.map(n => n.name.split('-')[1]), // 取地区名
+      axisLabel: { color: '#ccc' }
+    },
+    yAxis: {
+      type: 'value',
+      splitLine: { lineStyle: { color: '#333' } },
+      axisLabel: { color: '#ccc' }
+    },
+    series: [
+      {
+        name: '吞吐流量',
+        type: 'bar',
+        data: nodes.map(n => parseInt(n.flow.replace(/,/g, ''))),
+        itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: '#00f2fe'}, {offset: 1, color: '#4facfe'}]) }
+      },
+      {
+        name: '运营成本',
+        type: 'line',
+        data: nodes.map(n => parseInt(n.cost)),
+        itemStyle: { color: '#f6d365' },
+        lineStyle: { width: 3 }
+      }
+    ]
+  }
+  barChart.setOption(barOption)
+
+  // 窗口缩放自适应
+  window.addEventListener('resize', () => {
+    radarChart.resize()
+    barChart.resize()
+  })
 }
 
-// 辅助函数：评分颜色
+// 辅助函数
+const isPositive = (str) => str && !str.includes('-')
 const getScoreClass = (score) => {
-  if (score >= 85) return 'score-aaa'
-  if (score >= 70) return 'score-aa'
-  return 'score-b'
+  if (score >= 85) return 'ring-aaa'
+  if (score >= 70) return 'ring-aa'
+  return 'ring-b'
 }
-
-// 表格隔行变色
-const tableRowClassName = ({ rowIndex }) => {
-  return rowIndex % 2 === 1 ? 'warning-row' : ''
-}
+const tableRowClassName = ({ rowIndex }) => rowIndex % 2 === 1 ? 'row-dark' : ''
 </script>
 
 <style scoped>
-/* 全局布局 */
+/* 整体布局 - 深空灰背景 */
 .app-container {
   min-height: 100vh;
-  background-color: #0f172a; /* 深邃蓝黑背景 */
+  background-color: #0b1120;
   color: #fff;
   padding: 20px 40px;
-  font-family: 'Inter', 'Helvetica Neue', sans-serif;
+  font-family: 'PingFang SC', sans-serif;
 }
 
-/* 头部 */
+/* 顶部 */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 40px;
+  margin-bottom: 30px;
   border-bottom: 1px solid #1e293b;
-  padding-bottom: 20px;
+  padding-bottom: 15px;
 }
-.logo-area {
-  display: flex;
-  align-items: center;
-  font-size: 24px;
-  font-weight: 800;
-  background: linear-gradient(to right, #409eff, #67c23a);
-  -webkit-background-clip: text;
-  color: transparent;
-}
-.logo-icon { margin-right: 10px; filter: grayscale(0); }
+.logo-area { display: flex; align-items: center; gap: 10px; color: #38bdf8; }
+.title { font-size: 24px; font-weight: bold; }
+.version { font-size: 12px; background: #38bdf8; color: #000; padding: 2px 6px; border-radius: 4px; vertical-align: super;}
+.status-bar { display: flex; gap: 15px; align-items: center; }
 
-/* 搜索区 */
-.search-section {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 40px;
-}
-.search-wrapper {
-  display: flex;
-  width: 60%;
-  gap: 10px;
-}
-.custom-search :deep(.el-input__wrapper) {
-  background-color: #1e293b;
-  box-shadow: none;
-  border: 1px solid #334155;
-}
-.custom-search :deep(.el-input__inner) {
-  color: white;
-}
+/* 搜索框 */
+.search-section { display: flex; justify-content: center; margin-bottom: 30px; }
+.search-box { width: 600px; display: flex; gap: 10px; }
+.custom-input :deep(.el-input__wrapper) { background-color: #1e293b; box-shadow: none; border: 1px solid #334155; }
+.custom-input :deep(.el-input__inner) { color: white; }
 
-/* 卡片通用样式 */
-.box-card {
-  background-color: #1e293b !important;
-  border: 1px solid #334155 !important;
-  color: white !important;
-  border-radius: 12px;
-}
-.card-header {
-  display: flex;
-  align-items: center;
-  font-weight: bold;
-  font-size: 16px;
-}
-
-/* 评分卡片 */
-.score-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px 0;
-}
-.score-circle {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  border: 8px solid;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 20px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.5);
-}
-.score-num { font-size: 36px; font-weight: bold; }
-.score-level { font-size: 14px; opacity: 0.8; }
-.score-aaa { border-color: #67c23a; color: #67c23a; }
-.score-aa { border-color: #409eff; color: #409eff; }
-.score-b { border-color: #e6a23c; color: #e6a23c; }
-
-.market-info {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 15px;
-}
-.info-item { text-align: center; }
-.label { font-size: 12px; color: #94a3b8; }
-.val { font-size: 16px; font-weight: bold; }
-.val.danger { color: #f56c6c; }
-.val.success { color: #67c23a; }
-
-/* AI 报告卡片 */
-.ai-card {
-  height: 100%;
-}
-.ai-header { justify-content: space-between; width: 100%; }
-.ai-content {
-  background-color: #0f172a;
-  padding: 15px;
+/* 通用面板样式 */
+.panel {
+  background: #151e32;
+  border: 1px solid #2a3b55;
   border-radius: 8px;
-  font-size: 14px;
-  line-height: 1.8;
-  color: #cbd5e1;
-  min-height: 200px;
-  border-left: 3px solid #626aef;
+  padding: 15px;
+  height: 100%;
+  box-sizing: border-box;
 }
-.ai-text { white-space: pre-wrap; }
+.panel-title { font-size: 14px; color: #94a3b8; margin-bottom: 15px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase;}
 
-/* 核心指标色块 */
-.metrics-row { margin-top: 20px; }
-.metric-box {
-  padding: 20px;
-  border-radius: 12px;
-  color: white;
-  text-align: center;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
+/* 1. 评分面板 */
+.score-panel { text-align: center; height: 260px; }
+.score-ring {
+  width: 120px; height: 120px; border-radius: 50%; border: 8px solid; margin: 20px auto;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
 }
-.metric-box:hover { transform: translateY(-5px); }
-.metric-num { font-size: 28px; font-weight: 800; margin-bottom: 5px; }
-.metric-label { font-size: 12px; opacity: 0.8; margin-bottom: 15px; }
-.blue-box { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
-.green-box { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-.orange-box { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
-.purple-box { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+.score-val { font-size: 32px; font-weight: bold; }
+.score-label { font-size: 12px; opacity: 0.8; }
+.ring-aaa { border-color: #10b981; color: #10b981; }
+.ring-aa { border-color: #3b82f6; color: #3b82f6; }
+.ring-b { border-color: #f59e0b; color: #f59e0b; }
+.company-badges { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
 
-/* 表格调整 */
-:deep(.el-table) {
-  background-color: transparent !important;
-  color: #fff !important;
-  --el-table-border-color: #334155;
-  --el-table-header-bg-color: #1e293b;
-  --el-table-row-hover-bg-color: #334155;
-  --el-table-tr-bg-color: transparent;
+/* 2. 行情面板 */
+.market-panel { height: 260px; }
+.market-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+.market-item { background: #1e293b; padding: 10px; border-radius: 6px; text-align: center; }
+.m-label { font-size: 12px; color: #64748b; margin-bottom: 5px; }
+.m-val { font-size: 18px; font-weight: bold; }
+.highlight { color: #facc15; }
+.danger { color: #f43f5e; }
+.up { color: #ef4444; } /* A股红涨 */
+.down { color: #22c55e; } /* A股绿跌 */
+
+/* 3. AI 面板 */
+.ai-panel { height: 260px; overflow: hidden; display: flex; flex-direction: column; }
+.ai-icon { float: right; color: #8b5cf6; font-size: 18px; }
+.ai-content-box {
+  background: #0f172a; flex: 1; padding: 10px; border-radius: 6px;
+  overflow-y: auto; font-size: 13px; line-height: 1.6; color: #cbd5e1;
+  border-left: 3px solid #8b5cf6;
 }
-:deep(.el-table th), :deep(.el-table tr) {
-  background-color: transparent !important;
+
+/* 图表区 */
+.chart-row { margin-top: 20px; }
+.chart-panel { height: 320px; }
+.chart-container { width: 100%; height: 280px; }
+
+/* 指标卡片 */
+.metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin: 20px 0; }
+.metric-card {
+  background: #151e32; border: 1px solid #2a3b55; border-radius: 8px; padding: 15px;
+  display: flex; align-items: center; gap: 15px; transition: transform 0.2s;
 }
+.metric-card:hover { transform: translateY(-3px); border-color: #38bdf8; }
+.icon-bg { width: 48px; height: 48px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white;}
+.blue { background: #3b82f6; } .green { background: #10b981; } .orange { background: #f59e0b; } .purple { background: #8b5cf6; }
+.num { font-size: 22px; font-weight: bold; }
+.txt { font-size: 12px; color: #94a3b8; }
+
+/* 表格 */
+.table-panel { margin-top: 20px; }
+:deep(.el-table) { background: transparent; --el-table-tr-bg-color: transparent; --el-table-header-bg-color: #1e293b; color: #fff; --el-table-border-color: #2a3b55; }
+:deep(.row-dark) { background: #111827; }
+
+/* 空状态 */
+.empty-holder { display: flex; justify-content: center; margin-top: 100px; color: #475569; }
+.empty-box { text-align: center; }
+.empty-icon { font-size: 80px; margin-bottom: 20px; opacity: 0.5; }
 </style>

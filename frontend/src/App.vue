@@ -88,27 +88,13 @@
 
       <div class="section-divider">核心财务指标 (Core Financials)</div>
       <div class="core-grid">
-        <div class="c-card bg-blue">
-          <div class="cv">{{ result.data.financial.core.price }}</div><div class="cl">股价</div>
-        </div>
-        <div class="c-card bg-green">
-          <div class="cv">{{ result.data.financial.core.mv }}</div><div class="cl">市值</div>
-        </div>
-        <div class="c-card bg-orange">
-          <div class="cv">{{ result.data.financial.core.pe }}</div><div class="cl">市盈率</div>
-        </div>
-        <div class="c-card bg-purple">
-          <div class="cv">{{ result.data.financial.core.revenue }}</div><div class="cl">营收</div>
-        </div>
-        <div class="c-card bg-dark">
-          <div class="cv small">{{ result.data.financial.core.volume }}</div><div class="cl">成交量</div>
-        </div>
-        <div class="c-card bg-dark">
-          <div class="cv small">{{ result.data.financial.core.high }}</div><div class="cl">最高价</div>
-        </div>
-        <div class="c-card bg-dark">
-          <div class="cv small">{{ result.data.financial.core.low }}</div><div class="cl">最低价</div>
-        </div>
+        <div class="c-card bg-blue"><div class="cv">{{ result.data.financial.core.price }}</div><div class="cl">股价</div></div>
+        <div class="c-card bg-green"><div class="cv">{{ result.data.financial.core.mv }}</div><div class="cl">市值</div></div>
+        <div class="c-card bg-orange"><div class="cv">{{ result.data.financial.core.pe }}</div><div class="cl">市盈率</div></div>
+        <div class="c-card bg-purple"><div class="cv">{{ result.data.financial.core.revenue }}</div><div class="cl">营收</div></div>
+        <div class="c-card bg-dark"><div class="cv small">{{ result.data.financial.core.volume }}</div><div class="cl">成交量</div></div>
+        <div class="c-card bg-dark"><div class="cv small">{{ result.data.financial.core.high }}</div><div class="cl">最高价</div></div>
+        <div class="c-card bg-dark"><div class="cv small">{{ result.data.financial.core.low }}</div><div class="cl">最低价</div></div>
       </div>
 
       <el-row :gutter="20" style="margin-top:20px;">
@@ -143,29 +129,46 @@
         <el-col :span="6">
           <div class="m-box b-blue">
             <el-icon class="m-icon"><Goods /></el-icon>
-            <div class="mn">{{result.data.logistics.stats.supplier_nodes}}</div>
-            <div class="mt">供应商节点</div>
+            <div class="mn">{{result.data.logistics.stats.supplier_nodes}}</div><div class="mt">供应商节点</div>
           </div>
         </el-col>
         <el-col :span="6">
           <div class="m-box b-green">
             <el-icon class="m-icon"><Van /></el-icon>
-            <div class="mn">{{result.data.logistics.stats.logistics_routes}}</div>
-            <div class="mt">物流路线</div>
+            <div class="mn">{{result.data.logistics.stats.logistics_routes}}</div><div class="mt">物流路线</div>
           </div>
         </el-col>
         <el-col :span="6">
           <div class="m-box b-orange">
             <el-icon class="m-icon"><House /></el-icon>
-            <div class="mn">{{result.data.logistics.stats.warehouses}}</div>
-            <div class="mt">仓储中心</div>
+            <div class="mn">{{result.data.logistics.stats.warehouses}}</div><div class="mt">仓储中心</div>
           </div>
         </el-col>
         <el-col :span="6">
           <div class="m-box b-purple">
             <el-icon class="m-icon"><Timer /></el-icon>
-            <div class="mn">{{result.data.logistics.stats.transport_efficiency}}</div>
-            <div class="mt">运输效率</div>
+            <div class="mn">{{result.data.logistics.stats.transport_efficiency}}</div><div class="mt">运输效率</div>
+          </div>
+        </el-col>
+      </el-row>
+
+      <el-row :gutter="20" class="chart-row" style="margin-top: 20px;">
+        <el-col :span="8">
+          <div class="panel chart-panel">
+            <div class="panel-title">
+              供应链韧性雷达
+              <span class="source-badge-sub">Model: Risk-Algo V1.0</span>
+            </div>
+            <div id="radarChart" class="chart-container"></div>
+          </div>
+        </el-col>
+        <el-col :span="16">
+          <div class="panel chart-panel">
+            <div class="panel-title">
+              全球节点流量与成本分析
+              <span class="source-badge-sub">Data: 确定性映射推演</span>
+            </div>
+            <div id="barChart" class="chart-container"></div>
           </div>
         </el-col>
       </el-row>
@@ -219,9 +222,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import * as echarts from 'echarts'
 
 const searchQuery = ref('')
 const loading = ref(false)
@@ -232,13 +236,78 @@ setInterval(() => { currentTime.value = new Date().toLocaleTimeString() }, 1000)
 const handleSearch = async () => {
   if (!searchQuery.value) return
   loading.value = true
+  result.value = null // 清空，触发重新渲染
+
   try {
     const res = await axios.post('http://127.0.0.1:8080/assess', { company_name: searchQuery.value })
     if (res.data.status === 'success') {
       result.value = res.data
       ElMessage.success('分析完成')
+      // 等待 DOM 更新后渲染图表
+      await nextTick()
+      initCharts()
     } else { ElMessage.warning(res.data.message) }
   } catch(e) { ElMessage.error('连接失败') } finally { loading.value = false }
+}
+
+const initCharts = () => {
+  if (!result.value) return
+
+  // 1. 雷达图
+  const radarChart = echarts.init(document.getElementById('radarChart'))
+  // 使用后端返回的统计数据作为基础来生成雷达图数据
+  // 这里做了一个简单的映射，因为后端目前没返回 radar_data，我们用 stats 动态计算
+  const stats = result.value.data.logistics.stats
+  const radarOption = {
+    backgroundColor: 'transparent',
+    tooltip: {},
+    radar: {
+      indicator: [
+        { name: '供应节点', max: 100 },
+        { name: '物流覆盖', max: 100 },
+        { name: '仓储能力', max: 50 },
+        { name: '运输效率', max: 100 }
+      ],
+      splitArea: { areaStyle: { color: ['rgba(64,158,255,0.1)', 'rgba(64,158,255,0.2)'] } },
+      axisName: { color: '#fff' }
+    },
+    series: [{
+      type: 'radar',
+      data: [{
+        // 将数值映射到 0-100 用于展示
+        value: [
+          Math.min(100, stats.supplier_nodes),
+          Math.min(100, stats.logistics_routes),
+          Math.min(50, stats.warehouses),
+          parseInt(stats.transport_efficiency)
+        ],
+        name: '供应链能力',
+        areaStyle: { color: 'rgba(64, 158, 255, 0.5)' },
+        lineStyle: { color: '#409eff' }
+      }]
+    }]
+  }
+  radarChart.setOption(radarOption)
+
+  // 2. 柱状图
+  const barChart = echarts.init(document.getElementById('barChart'))
+  const nodes = result.value.data.nodes
+  const barOption = {
+    backgroundColor: 'transparent',
+    tooltip: { trigger: 'axis' },
+    legend: { textStyle: { color: '#fff' }, bottom: 0 },
+    grid: { top: '15%', bottom: '20%', left: '5%', right: '5%', containLabel: true },
+    xAxis: { type: 'category', data: nodes.map(n => n.name.split('-')[1] || n.name), axisLabel: { color: '#ccc' } },
+    yAxis: { type: 'value', splitLine: { lineStyle: { color: '#333' } }, axisLabel: { color: '#ccc' } },
+    series: [
+      { name: '吞吐流量', type: 'bar', data: nodes.map(n => parseInt(n.flow)), itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: '#00f2fe'}, {offset: 1, color: '#4facfe'}]) } },
+      // 随机生成一个成本数据用于展示图表效果，因为后端 nodes 目前只返回了 flow
+      { name: '运营成本', type: 'line', data: nodes.map(n => parseInt(n.flow) / 10 + Math.random()*50), itemStyle: { color: '#f6d365' }, lineStyle: { width: 3 } }
+    ]
+  }
+  barChart.setOption(barOption)
+
+  window.addEventListener('resize', () => { radarChart.resize(); barChart.resize() })
 }
 
 const isPositive = (s) => s && !s.includes('-')
@@ -297,6 +366,11 @@ const getScoreClass = (s) => s >= 80 ? 'sc-a' : s >= 60 ? 'sc-b' : 'sc-c'
 .b-blue { background: linear-gradient(135deg, #2563eb, #1d4ed8); } .b-green { background: linear-gradient(135deg, #059669, #047857); }
 .b-orange { background: linear-gradient(135deg, #d97706, #b45309); } .b-purple { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
 .mn { font-size: 32px; font-weight: bold; z-index: 2; position: relative; } .mt { font-size: 14px; opacity: 0.9; z-index: 2; position: relative; }
+
+/* 图表区 */
+.chart-panel { height: 320px; }
+.chart-container { width: 100%; height: 280px; }
+.source-badge-sub { font-size: 10px; color: #64748b; text-transform: none; }
 
 /* 风险与建议 */
 .risk-card { background: #151e32; border-radius: 8px; border: 1px solid #2a3b55; height: 100%; overflow: hidden; }

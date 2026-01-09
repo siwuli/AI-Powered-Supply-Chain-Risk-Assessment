@@ -1,0 +1,36 @@
+/* frontend/src/style.css */
+:root {
+  --bg-color: #131728; /* 深蓝背景 */
+  --card-bg: #1e2538;  /* 卡片背景 */
+  --text-primary: #ffffff;
+  --text-secondary: #8c9bb3;
+  --accent-blue: #409eff;
+  --accent-green: #67c23a;
+  --accent-orange: #e6a23c;
+  --accent-red: #f56c6c;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+}
+
+/* 覆盖 Element Plus 的默认样式，使其变黑 */
+.el-card {
+  background-color: var(--card-bg) !important;
+  border: 1px solid #2c344a !important;
+  color: var(--text-primary) !important;
+}
+
+.el-input__wrapper {
+  background-color: #262f45 !important;
+  box-shadow: none !important;
+  border: 1px solid #3d4a6b;
+}
+
+.el-input__inner {
+  color: white !important;
+}

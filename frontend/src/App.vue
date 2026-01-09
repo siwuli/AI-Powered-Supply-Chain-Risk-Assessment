@@ -140,10 +140,34 @@
 
       <div class="section-divider">供应链运营分析 (Operations)</div>
       <el-row :gutter="20">
-        <el-col :span="6"><div class="m-box b-blue"><div class="mn">{{result.data.logistics.stats.supplier_nodes}}</div><div class="mt">供应商节点</div></div></el-col>
-        <el-col :span="6"><div class="m-box b-green"><div class="mn">{{result.data.logistics.stats.logistics_routes}}</div><div class="mt">物流路线</div></div></el-col>
-        <el-col :span="6"><div class="m-box b-orange"><div class="mn">{{result.data.logistics.stats.warehouses}}</div><div class="mt">仓储中心</div></div></el-col>
-        <el-col :span="6"><div class="m-box b-purple"><div class="mn">{{result.data.logistics.stats.transport_efficiency}}</div><div class="mt">运输效率</div></div></el-col>
+        <el-col :span="6">
+          <div class="m-box b-blue">
+            <el-icon class="m-icon"><Goods /></el-icon>
+            <div class="mn">{{result.data.logistics.stats.supplier_nodes}}</div>
+            <div class="mt">供应商节点</div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div class="m-box b-green">
+            <el-icon class="m-icon"><Van /></el-icon>
+            <div class="mn">{{result.data.logistics.stats.logistics_routes}}</div>
+            <div class="mt">物流路线</div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div class="m-box b-orange">
+            <el-icon class="m-icon"><House /></el-icon>
+            <div class="mn">{{result.data.logistics.stats.warehouses}}</div>
+            <div class="mt">仓储中心</div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div class="m-box b-purple">
+            <el-icon class="m-icon"><Timer /></el-icon>
+            <div class="mn">{{result.data.logistics.stats.transport_efficiency}}</div>
+            <div class="mt">运输效率</div>
+          </div>
+        </el-col>
       </el-row>
 
       <el-row :gutter="20" style="margin-top:20px;">
@@ -222,6 +246,7 @@ const getScoreClass = (s) => s >= 80 ? 'sc-a' : s >= 60 ? 'sc-b' : 'sc-c'
 </script>
 
 <style scoped>
+/* 全局布局 */
 .app-container { min-height: 100vh; background: #0b1120; color: #fff; padding: 20px 40px 0; font-family: sans-serif; display: flex; flex-direction: column; }
 .header { display: flex; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 15px; margin-bottom: 20px; }
 .logo-area { color: #38bdf8; font-size: 20px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
@@ -266,11 +291,12 @@ const getScoreClass = (s) => s >= 80 ? 'sc-a' : s >= 60 ? 'sc-b' : 'sc-c'
 .d-i { display: flex; flex-direction: column; background: #1e293b; padding: 5px; border-radius: 4px; }
 .d-i span { font-size: 10px; color: #64748b; } .d-i b { font-size: 14px; } .d-i.danger b { color: #f43f5e; }
 
-/* 物流色块 */
-.m-box { padding: 15px; border-radius: 8px; text-align: center; }
+/* 物流色块 (带图标) */
+.m-box { padding: 15px; border-radius: 8px; text-align: center; position: relative; overflow: hidden; height: 100px; display: flex; flex-direction: column; justify-content: center;}
+.m-icon { font-size: 60px; position: absolute; right: 10px; bottom: -10px; opacity: 0.3; color: rgba(255,255,255,0.8); }
 .b-blue { background: linear-gradient(135deg, #2563eb, #1d4ed8); } .b-green { background: linear-gradient(135deg, #059669, #047857); }
 .b-orange { background: linear-gradient(135deg, #d97706, #b45309); } .b-purple { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
-.mn { font-size: 28px; font-weight: bold; } .mt { font-size: 12px; opacity: 0.9; }
+.mn { font-size: 32px; font-weight: bold; z-index: 2; position: relative; } .mt { font-size: 14px; opacity: 0.9; z-index: 2; position: relative; }
 
 /* 风险与建议 */
 .risk-card { background: #151e32; border-radius: 8px; border: 1px solid #2a3b55; height: 100%; overflow: hidden; }
